@@ -1,0 +1,25 @@
+2018-03-02 14:48:19,177 - line:23 - INFO: 172.16.1.104 POST /api/getmtlr Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:58.0) Gecko/20100101 Firefox/58.0 -MSM request data: {u'mt_type': u'multi', u'callerId': u'abf6b5a1ad23d3b783f3de6a6e0960ef_25396b01cbed691537835bbdbf4a67e5_ericsson2', u'lrg_id': u'testlrg'}-
+2018-03-02 14:48:19,181 - line:34 - INFO: Multipoint meeting start..
+2018-03-02 14:48:19,185 - line:38 - INFO: Found user vsp id: 62229b93abeb4294d3b17cb313214542, lr grid id: None
+2018-03-02 14:48:19,186 - line:41 - WARNING: Multipoint meeting. Not found caller's adjacency LR, or this VSP has no LRG, return default lr
+2018-03-02 14:50:05,603 - line:23 - INFO: 172.16.1.104 POST /api/getmtlr Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:58.0) Gecko/20100101 Firefox/58.0 -MSM request data: {u'mt_type': u'multi', u'callerId': u'abf6b5a1ad23d3b783f3de6a6e0960ef_25396b01cbed691537835bbdbf4a67e5_ericsson2', u'lrg_id': u'testlrg'}-
+2018-03-02 14:50:05,605 - line:34 - INFO: Multipoint meeting start..
+2018-03-02 14:50:05,608 - line:38 - INFO: Found user vsp id: 62229b93abeb4294d3b17cb313214542, lr grid id: None
+2018-03-02 14:50:05,608 - line:42 - WARNING: Multipoint meeting. Not found caller's adjacency LR, or this VSP has no LRG, return default lr
+2018-03-02 14:50:05,608 - line:55 - INFO: Found lr_list in lrc_list: []
+2018-03-02 14:52:47,070 - line:23 - INFO: 172.16.1.104 POST /api/getmtlr Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:58.0) Gecko/20100101 Firefox/58.0 -MSM request data: {u'mt_type': u'multi', u'callerId': u'abf6b5a1ad23d3b783f3de6a6e0960ef_25396b01cbed691537835bbdbf4a67e5_ericsson2', u'lrg_id': u'testlrg'}-
+2018-03-02 14:52:47,073 - line:34 - INFO: Multipoint meeting start..
+2018-03-02 14:52:47,078 - line:38 - INFO: Found user vsp id: 62229b93abeb4294d3b17cb313214542, lr grid id: None
+2018-03-02 14:52:47,078 - line:41 - WARNING: Multipoint meeting. Not found caller's adjacency LR, or this VSP has no LRG, return default lr
+2018-03-02 14:53:15,298 - line:23 - INFO: 172.16.1.104 POST /api/getmtlr Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:58.0) Gecko/20100101 Firefox/58.0 -MSM request data: {u'mt_type': u'multi', u'callerId': u'abf6b5a1ad23d3b783f3de6a6e0960ef_25396b01cbed691537835bbdbf4a67e5_ericsson2', u'lrg_id': u'testlrg'}-
+2018-03-02 14:53:15,301 - line:34 - INFO: Multipoint meeting start..
+2018-03-02 14:53:15,306 - line:38 - INFO: Found user vsp id: 62229b93abeb4294d3b17cb313214542, lr grid id: None
+2018-03-02 14:53:15,306 - line:41 - WARNING: Multipoint meeting. Not found caller's adjacency LR, or this VSP has no LRG, return default lr
+2018-03-02 14:53:57,367 - line:23 - INFO: 172.16.1.104 POST /api/getmtlr Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:58.0) Gecko/20100101 Firefox/58.0 -MSM request data: {u'mt_type': u'multi', u'callerId': u'abf6b5a1ad23d3b783f3de6a6e0960ef_25396b01cbed691537835bbdbf4a67e5_ericsson2', u'lrg_id': u'testlrg'}-
+2018-03-02 14:53:57,370 - line:34 - INFO: Multipoint meeting start..
+2018-03-02 14:53:57,375 - line:38 - INFO: Found user vsp id: 62229b93abeb4294d3b17cb313214542, lr grid id: None
+2018-03-02 14:53:57,375 - line:41 - WARNING: Multipoint meeting. Not found caller's adjacency LR, or this VSP has no LRG, return default lr
+2018-03-02 14:53:58,014 - line:23 - INFO: 172.16.1.104 POST /api/getmtlr Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:58.0) Gecko/20100101 Firefox/58.0 -MSM request data: {u'mt_type': u'multi', u'callerId': u'abf6b5a1ad23d3b783f3de6a6e0960ef_25396b01cbed691537835bbdbf4a67e5_ericsson2', u'lrg_id': u'testlrg'}-
+2018-03-02 14:53:58,017 - line:34 - INFO: Multipoint meeting start..
+2018-03-02 14:53:58,021 - line:38 - INFO: Found user vsp id: 62229b93abeb4294d3b17cb313214542, lr grid id: None
+2018-03-02 14:53:58,022 - line:41 - WARNING: Multipoint meeting. Not found caller's adjacency LR, or this VSP has no LRG, return default lr
