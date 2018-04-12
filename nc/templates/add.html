@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="{{static_url('css/bootstrap.min.css')}}" rel="stylesheet" type="text/css">
+	<script src="{{static_url('js/jquery-3.2.1.min.js')}}"></script>
+    <title>test</title>
+	<style>
+		body {
+			text-align: center;
+		}
+		.container-fluid {
+			margin-top: 150px;
+			width: 80%;
+		}
+		table th,caption {
+			text-align: center;
+		}
+	</style>
+	<script type="text/javascript">
+		$(document).ready(function(){
+		    $("#sub").click(function(){
+		        var statu = confirm("确认添加?");
+				if (!statu){
+		            return false;
+				}
+				var account = $("#account").val();
+		        var lr_ip = $("#lr_ip").val();
+		        var lr_port = $("#lr_port").val();
+				$.ajax({
+					type: 'post',
+					url: '/addforce',
+					dataType: "json",
+					data: JSON.stringify({
+						"account": account,
+						"lr_ip": lr_ip,
+						"lr_port": lr_port
+					}),
+					success:function(res){
+						if (res.code == 200){
+						    alert("已成功添加！");
+						    window.location.replace("/forcetable/");
+						}else if (res.code == 400) {
+						    alert("添加失败，请检查用户名是否已存在！");
+                            $("#account").focus();
+                            $("#account").attr("style", "border: 1px solid red;");
+//                            window.location.replace("/addforce");
+                        }else{
+                            alert("添加失败，不存在的LR！");
+                            $("#lr_ip").focus();
+                            $("#lr_ip").attr("style", "border: 1px solid red;");
+                            $("#lr_port").attr("style", "border: 1px solid red;");
+//                            window.location.replace("/addforce");
+                        }
+					},
+					error:function () {
+						alert("添加异常！");
+						window.location.replace("/forcetable/");
+                    }
+				})
+			})
+		})
+	</script>
+</head>
+
+<body>
+<div class="container-fluid">
+	<div class="row-fluid">
+		<div class="span12">
+			<!--<h3>Force route table</h3>-->
+			<!--用户名：<input type="text"><br>-->
+			<!--LR：<input type="text">-->
+			<!--端口：<input type="text">-->
+			<!--<button type="button" class="btn btn-primary">添加</button>-->
+			<!--<form action="/addforce" method="post">-->
+				<table class="table table-striped" align="center">
+					<caption><h3>Force route table</h3></caption>
+					<thead>
+						<tr>
+							<th>
+								用户名
+							</th>
+							<th>
+								LR IP
+							</th>
+							<th>LR端口</th>
+						</tr>
+					</thead>
+					<tbody>
+					<tr>
+						<td><input type="text" id="account" required style=""></td>
+						<td><input type="text" id="lr_ip" required style=""></td>
+						<td><input type="number" min="9001" max="10000" value="9001" id="lr_port" required></td>
+					</tr>
+					</tbody>
+				</table>
+				<button type="button" class="btn btn-primary" id="sub">保存</button>
+			<!--</form>-->
+		</div>
+		<span id="tab"></span>
+	</div>
+</div>
+</body>
+</html>

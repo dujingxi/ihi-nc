@@ -1,0 +1,28 @@
+2018-02-02 10:34:21,263 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:34:50,272 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:35:25,886 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:35:33,173 - line:843 - INFO: Access: DELETE /forcetable clean up
+2018-02-02 10:35:34,088 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:40:15,263 - line:881 - INFO: New record in forceroute table, accout[ext2] -> lr[220.231.177.21:9001]
+2018-02-02 10:40:16,244 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:40:23,450 - line:881 - INFO: New record in forceroute table, accout[ext3] -> lr[220.231.177.21:9001]
+2018-02-02 10:40:24,203 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:40:26,542 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:40:48,456 - line:853 - INFO: Access: POST /forcetable delete record
+2018-02-02 10:40:49,648 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:42:18,348 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:42:21,415 - line:853 - INFO: Access: POST /forcetable delete record
+2018-02-02 10:42:24,316 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:42:43,033 - line:881 - INFO: New record in forceroute table, accout[ext1] -> lr[220.231.177.21:9001]
+2018-02-02 10:42:44,101 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:42:51,209 - line:881 - INFO: New record in forceroute table, accout[etx5] -> lr[220.231.177.21:9001]
+2018-02-02 10:42:52,278 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:45:44,133 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:45:46,541 - line:844 - INFO: Access: DELETE /forcetable clean up
+2018-02-02 10:45:48,764 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:48:27,173 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:48:29,304 - line:845 - INFO: 172.16.1.104 DELETE /forcetable/ -clean up-
+2018-02-02 10:48:38,452 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:49:37,260 - line:836 - INFO: Access: GET /forcetable HTTP
+2018-02-02 10:49:40,591 - line:844 - INFO: 172.16.1.104 DELETE /forcetable/ Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0 -clean up-
+2018-02-02 10:52:02,839 - line:838 - INFO: Access: GET /forcetable HTTP
