@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="{{static_url('css/bootstrap.min.css')}}" rel="stylesheet" type="text/css">
+	<script src="{{static_url('js/jquery-3.2.1.min.js')}}"></script>
+    <title>Forcetable</title>
+	<style>
+		body {
+			text-align: center;
+		}
+		.container-fluid {
+			margin-top: 150px;
+			width: 80%;
+		}
+		table th,caption {
+			text-align: center;
+		}
+	</style>
+	<script type="text/javascript">
+		$(document).ready(function(){
+            $("#cleanup").click(function(){
+		        var statu = confirm("确认清空?");
+		        if (!statu) {
+		            return false;
+				}
+				$.ajax({
+					type: 'DELETE',
+					url: "/forcetable/",
+					success:function(data){
+					    if (data == "ok") {
+					        alert("清空成功!");
+					        location.reload();
+						}else{
+					        alert("操作失败!");
+						}
+					},
+					error:function(){
+					    alert("异常失败!")
+					}
+				})
+			});
+            $(".delete").click(function(){
+                var statu = confirm("确认删除?");
+				if (!statu){
+				    return false;
+				}
+                var account = $(this).parents("tr").find("td:eq(1)").text();
+                // var lr = $(this).parents("tr").find("td:eq(2)").text();
+                $.ajax({
+					type: 'post',
+					url: "/forcetable/"+account,
+					data: JSON.stringify({
+					    "account": account
+					}),
+					success:function(res){
+					    if (res == "ok"){
+					        alert("删除成功!");
+					        location.reload();
+						}else{
+					        alert("删除失败!");
+						}
+					},
+					error:function(){
+					    alert("删除异常!");
+					}
+				});
+                // console.log(account, lr);
+			})
+		});
+	</script>
+</head>
+
+<body>
+<div class="container-fluid">
+	<div class="row-fluid">
+		<div class="span12">
+			<table class="table table-striped" align="center">
+				<caption><h3>Force route table</h3></caption>
+				<thead>
+					<tr>
+						<th>
+							序号
+						</th>
+						<th>
+							用户名
+						</th>
+						<th>
+							LR
+						</th>
+						<th>
+							删除
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+				{% for res in force_route_list %}
+				<tr>
+					<td>{{ res["id"] }}</td>
+					<td>{{ res["user"] }}</td>
+					<td>{{ res["lr"] }}</td>
+					<td><button type="button" class="btn btn-link delete">删除</button></td>
+				</tr>
+				{% end %}
+				</tbody>
+			</table>
+			<button type="button" class="btn btn-primary" onclick="window.location.href='/addforce'">添加</button>
+			<button type="button" id="cleanup" class="btn btn-link" style="margin-left: 50px;">清空</button>
+		</div>
+		<span id="tab"></span>
+	</div>
+</div>
+</body>
+</html>
