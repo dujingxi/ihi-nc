@@ -108,7 +108,7 @@ def set_star(caller, logger):
         star_id = star_res["data"].split(":")[2]; starip, starport, startype = redis_client.hmget(star_res["data"], "ip", "port", "lr_type")
         res = {"lrid": star_id, "ip": starip, "port":starport, "lr_type":startype, "epids":[], "star": True}
     else:
-        star = nc_config.DEFAULT_LR
+        star = nc_config.DEFAULT_STAR_LR
         star["star"] = True
         res = star
     return res
@@ -142,7 +142,7 @@ def group_uniq(all_dlr_level_parents):
 # 选择指定level列表最终的会议level
 def elect_func(callerid, adjacency_list, all_person_level, logger):
     all_dlr_level_parents = {}
-    dlr_root_level = None
+    dlr_root_level = None; lr_type_users = []
     for level_id in adjacency_list:
         level_type = redis_client.hget("level:%s"%level_id, "level_type")
         #  parents_list = redis_client.lrange("ancestors:%s"%level_id, 0, -1)
@@ -150,11 +150,29 @@ def elect_func(callerid, adjacency_list, all_person_level, logger):
             dlr_parents_list, _ = split_level(level_id)
             dlr_root_level = dlr_parents_list[-1]
             all_dlr_level_parents[level_id] = dlr_parents_list
+        else:
+            lr_type_users += all_person_level[level_id]
     if not dlr_root_level:
         caller_level = redis_client.get("user:%s"%callerid)
-        caller_lr_parents_list = redis_client.lrange("ancestors:%s"%caller_level)
+        caller_lr_parents_list = redis_client.lrange("ancestors:%s"%caller_level, 0, -1)
         result = loop_choose(caller_lr_parents_list, logger)
-        logger.warning("Personlist does not have dlr type, returning the caller's adjacency [%s/%s]"%(callerid, caller_level))
+        # 国际会议允许不在同一层下的用户开会，主叫必须是国际台所在层
+        if result:
+            epids = []
+            for epid in all_person_level.values():
+                epids += epid
+            data = set_data(callerid, result)
+            for x in data:
+                x["epids"] = epids
+            if len(data) > 1:
+                #  star = nc_config.DEFAULT_STAR_LR
+                star = nc_config.DEFAULT_LR
+                star["star"] = True
+                data.append(star)
+            logger.warning("Personlist does not have dlr type, returning the caller's adjacency [%s/%s]"%(callerid, caller_level))
+            return data
+        else:
+            return nc_config.DEFAULT_LR
 
     group_dict = group_uniq(all_dlr_level_parents)
     group_dict_copy = copy.copy(group_dict)
@@ -175,6 +193,10 @@ def elect_func(callerid, adjacency_list, all_person_level, logger):
             response_data += data
     diff_target = set(group_dict) - set(group_dict_copy)
     if len(response_data) == 1 and len(diff_target) == 0:
+        if lr_type_users:
+            star = set_star(callerid, logger)
+            star["epids"] = lr_type_users
+            response_data.append(star)
         return response_data
     star = set_star(callerid, logger)
     use_caller_lr_list = []; epids = []
@@ -182,9 +204,218 @@ def elect_func(callerid, adjacency_list, all_person_level, logger):
         use_caller_lr_list += group_dict[target]
     for adjacency in use_caller_lr_list:
         epids += all_person_level[adjacency]
+    epids += lr_type_users
     star["epids"] = epids
     response_data.append(star)
     return response_data
+
+
+# 获取指定用户所在层的类型（lr/dlr）
+def get_user_info(user):
+    user_level = redis_client.get("user:%s"%user)
+    if user_level:
+        user_level_cluster_value = redis_client.hget("level:%s"%user_level, "level_cluster")
+        if len(user_level_cluster_value) == 1: user_level_cluster = "lrc"
+        else: user_level_cluster = "lrg"
+        dlr_parents, lr_parents = split_level(user_level)
+        if dlr_parents: dlr_root = dlr_parents[-1]
+        else: dlr_root = ""
+        res = {"status": True, "user_level": user_level, "user_level_cluster": user_level_cluster, "dlr_root": dlr_root, "dlr_parents": dlr_parents}
+    else:
+        res = {"status": False}
+    return res
+
+# 根据属于grid属性的层ＩＤ和cluster属性，挑选出一个可用lr
+def level_cluster_lr(level_id, cluster):
+    lr_list = redis_client.keys("lr:%s:*"%level_id)
+    lr = ''; sysload = 10000  # uncertain
+    for lr_obj in lr_list:
+        lr_cluster, lr_active, lr_sysload = redis_client.hmget(lr_obj, "cluster", "active", "sysload")
+        if lr_cluster == cluster:
+            if lr_active == '1':
+                if int(lr_sysload) <= sysload: 
+                    lr = lr_obj.split(":")[2]
+                    sysload = int(lr_sysload)
+            else: continue
+    if lr:
+        return lr   # lr => lr92385aebbf2d97cf320180504100221
+    else:
+        return None
+
+class meeting():
+    def __init__(self, caller, curmeeting, logger):
+        self.caller = caller
+        self.curmeeting = curmeeting
+        self.logger = logger
+        self.star = False
+        self.is_lrg = False
+        self.existing_lr = list()
+        self.existing_level = dict()
+        self.added_level = dict()
+        self.added_data = list()
+        self._set_attr()
+
+    def _set_attr(self):
+        for lr in self.curmeeting:
+            lrid = lr["lrid"]
+            lr_level_list = redis_client.keys("lr:*:%s"%lrid)
+            if lr_level_list:
+                lr_level = lr_level_list[0].split(":")[1]
+                if lr["star"]:
+                    self.star = lr
+                else:
+                    if lr_level not in self.existing_level: self.existing_level[lr_level] = [lrid]
+                    else: self.existing_level[lr_level].append(lrid)
+                    self.existing_lr.append({lrid: lr})
+        caller_level = redis_client.get("user:%s"%self.caller)
+        caller_level_type, caller_level_cluster = redis_client.hmget("level:%s"%caller_level, {"level_type", "level_cluster"})
+        if caller_level_type == "lr" and (len(caller_level_cluster.split(":")) > 1):
+            if caller_level in self.existing_level:
+                self.is_lrg = True
+                self.logger.info("Meeting type: LRG.")
+
+    # 查看新加的用户所在层是否已存在
+    def _fill_added(self, level, user, lrid=""):
+        if level in self.added_level:
+            added_level_lr = self.added_level[level]
+            for lr in self.added_data:
+                if lr["lrid"] in added_level_lr:
+                    lr["epids"].append(user)
+            return True
+        elif lrid:
+            self.added_level[level] = [lrid]
+            lrip, lrport, lrtype = redis_client.hmget("lr:%s:%s"%(level, lrid), "ip", "port", "lr_type")
+            self.added_data.append({"lrid": lrid, "ip":lrip, "port":lrport, "lr_type":lrtype, "epids": [user], "star": False})
+            return False
+
+    # 当为grid时，返回让ep自测的lr集合，同一个cluster属性使用会议中已存在的lr
+    def _elect_need_cluster(self, level_clusters_list, user_level, user):
+        level_clusters = set(level_clusters_list)
+        exist_clusters = set()
+        if self.existing_level.has_key(user_level):
+            for lr in self.existing_level[user_level]:
+                lr_cluster = redis_client.hget("lr:%s:%s"%(user_level, lr), "cluster")
+                exist_clusters.add(lr_cluster)
+            need_clusters = list(level_clusters - exist_clusters)
+            self.added_level[user_level] = self.existing_level[user_level]
+            for need_cluster in need_clusters:
+                lr = level_cluster_lr(user_level, need_cluster)
+                self.added_level[user_level].append(lr)
+            for lr_obj in self.added_level[user_level]:
+                lrip, lrport, lrtype = redis_client.hmget("lr:%s:%s"%(user_level,lr_obj), "ip", "port", "lr_type")
+                self.added_data.append({"lrid": lr_obj, "ip":lrip, "port":lrport, "lr_type":lrtype, "epids": [user], "star": False})
+            return 1
+        else:
+            res = loop_choose([user_level], self.logger)
+            if res:
+                data = set_data(self.caller, res)
+                for i in data:
+                    i["epids"] = [user]
+                    self.added_data.append(i)
+                return 2
+            else:
+                return 0
+
+    # 当会议没有star时，添加
+    def _add_star(self, epid=''):
+        f = 0
+        for lr in self.added_data:
+            if lr["star"] == True:
+                if epid != '': lr["epids"].append(epid)
+                f = 1
+        if f == 0:
+            res = set_star(self.caller, self.logger)
+            if epid != '': res["epids"].append(epid)
+            star_level = redis_client.hget("lr:*:%s"%res["lrid"], "level_id")
+            self.added_level[star_level] = [res["lrid"]]
+            self.added_data.append(res)
+            
+    # 加人时执行的方法
+    def addcallee(self, user):
+        user_level = redis_client.get("user:%s"%user)
+        if user_level:
+            user_level_cluster_value = redis_client.hget("level:%s"%user_level, "level_cluster")
+            user_level_cluster_value = user_level_cluster_value.split(":")
+            if len(user_level_cluster_value) == 1: user_level_cluster = "lrc"
+            else: user_level_cluster = "lrg"
+            dlr_parents, lr_parents = split_level(user_level)
+            if dlr_parents: dlr_root = dlr_parents[-1]
+            else: dlr_root = ""
+        else:
+            self.logger.warning("Not found the level for EP user [%s]"%user)
+            return False
+        # 要添加的用户所在层是否已经存在，若存在，只将用户id加到epids键中
+        res = self._fill_added(user_level, user)
+        if res: return self.added_data
+        # ＬＲＧ会议，国际台
+        if self.is_lrg:
+            if not dlr_root and user_level_cluster == "lrg":
+                self._elect_need_cluster(user_level_cluster_value, user_level, user)
+                self.logger.info("LRG meeting, return to normal.")
+                return self.added_data
+            else:
+                star_level = redis_client.hget("lr:*:%s"%self.star["lrid"], "level_id")
+                star_lrid = self.star["lrid"]
+                self._fill_added(star_level, user, star_lrid)
+                #  res = self._fill_added(star_level, user, star_lrid)
+                #  if not res:
+                    #  self.added_level[star_level] = [self.star["lrid"]]
+                    #  self.star["epids"] = [user]
+                    #  self.added_data.append(self.star)
+                self.logger.info("LRG meeting, added user[%s] exception, use star LR."%user)
+                return self.added_data
+
+        if not dlr_root:
+            if self.star:
+                star_level = redis_client.hget("lr:*:%s"%self.star["lrid"], "level_id")
+                star_lrid = self.star["lrid"]
+                self._add_star(user)
+                #  self._fill_added(star_level, user, star_lrid)
+            else:
+                self._add_star(user)
+            self.logger.info("Normal lr user[%s], use star LR."%user)
+        else:
+            if user_level_cluster == "lrg":
+                if self.star:
+                    num = self._elect_need_cluster(user_level_cluster_value, user_level, user)
+                    if num == 0:
+                        self._add_star(user)
+                else:
+                    num = self._elect_need_cluster(user_level_cluster_value, user_level, user)
+                    if num == 0: self._add_star(user)
+                    else: self._add_star()
+                self.logger.info("Normal dlrg user[%s]."%user)
+            else:
+                n = None
+                for dlr_level in  dlr_parents:
+                    if dlr_level in self.existing_level:
+                        n = dlr_level; break
+                if n:
+                    lrid = self.existing_level[n][0]
+                    lr = self.existing_lr[lrid]
+                    lr["epids"] = [user]
+                    self.added_data.append(lr)
+                else:
+                    res = loop_choose([dlr_root], self.logger)
+                    if not res:
+                        self.logger.error("User %s on level %s has not valid dlr.")
+                        if self.star:
+                            star_level = redis_client.hget("lr:*:%s"%self.star["lrid"], "level_id")
+                            self.added_level[star_level] = [self.star["lrid"]]
+                            self.star["epids"] = [user]
+                            self.added_data.append(self.star)
+                        else:
+                            self._add_star(user)
+                    else:
+                        lr_id = res["data"].split(":")[2]
+                        self._fill_added(dlr_root, user, lr_id)
+                        if not self.star:
+                            self._add_star()
+                self.logger.info("Normal dlrc user[%s]."%user)
+
+    # 返回添加时生成的数据
+    def get_data(self):
+        return self.added_data
 
 
 #  nc_config.DEFAULT_LR["epids"] = ['u1', 'u2', 'u3']
@@ -194,11 +425,10 @@ class getMeetinglr(tornado.web.RequestHandler):
     def post(self):
         logger = logging.getLogger("nc")
         req = self.request
-        #  print "^"*20, type(self.request.body), self.request.body
-        #  reqbody = json.loads(self.request.body)
-        reqbody = eval(self.request.body)
+        reqbody = json.loads(self.request.body)
+        #  reqbody = eval(self.request.body)
         caller = reqbody["callerId"]
-        logger.info("%s %s %s %s -MSM request data: %s-"%(req.remote_ip, req.method, req.uri, req.headers["User-Agent"], reqbody))
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
         user_list = redis_client.keys("user:%s"%caller)
         if not user_list:
             logger.error("The caller was not found, use default LR.")
@@ -245,6 +475,11 @@ class getMeetinglr(tornado.web.RequestHandler):
                     if len(data) == 1:
                         response = {"code": 200, "mark": "fixed", "data": data}
                     else:
+                        #  level_type = redis_client.hget("level:%s"%level_id, "level_type")
+                        #  if level_type == "lr":
+                            #  star = nc_config.DEFAULT_STAR_LR
+                        #  else:
+                            #  star = set_star(caller, logger)
                         star = set_star(caller, logger)
                         for x in data:
                             x["epids"] = personlist
@@ -297,6 +532,49 @@ class getMeetinglr(tornado.web.RequestHandler):
 class addCallee(tornado.web.RequestHandler):
     def post(self):
         logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = json.loads(self.request.body)
+        #  reqbody = eval(self.request.body)
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
+        caller = reqbody["callerId"]
+        addcallee = reqbody["addCallee"]
+        curmeeting = reqbody["curMeeting"]
+        star = False; existing_lr = dict()
+        for lr in curmeeting:
+            if lr["star"]: star = lr
+            lrid = lr["lrid"]
+            lr_list = redis_client.keys("lr:*:%s"%lrid)
+            if lr_list:
+                lr_level = lr_list[0].split(":")[1]
+                existing_lr["lr:%s:%s"%(lr_level, lrid)] = lr
+        add_num = len(addcallee)
+        if add_num < 1:
+            logging.warning("Missing parameters, the calleeList was empty.")
+            self.write({"code":400, "mark":"undecided", "data": data})
+        else:
+            my_meet = meeting(caller, curmeeting, logger)
+            for user in addcallee:
+                my_meet.addcallee(user)
+
+            response_data = my_meet.get_data()
+            epids_set = set()
+            for i in response_data:
+                epids = frozenset(i["epids"])
+                epids_set.add(epids)
+            if len(epids_set) == len(response_data):
+                response = {"code": 200, "mark": "fixed", "data": response_data}
+            else:
+                response = {"code": 200, "mark": "undecided", "data": response_data}
+            logger.info("Response: %s"%response)
+            self.write(response)
+
+
+
+
+
+
+
+
 
 
 

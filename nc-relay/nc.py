@@ -21,6 +21,7 @@ from lib.lrNode import lrNode
 from lib.ncDef import *
 from lib.ncInit import initDb
 from lib.meetings import getMeetinglr, addCallee
+from lib.nc_config import PORT_LIST, LAST_SUBTIME_INTERVAL, REDIS_SAVEIN_MYSQL_INTERVAL, LAST_SUBTIME_VALID_TIME
 import tornado.web
 import tornado.ioloop
 import tornado.escape
@@ -33,6 +34,10 @@ import json
 class changeEpHandler(tornado.web.RequestHandler):
     """ 用户-LR 表 API 接口 """
     def post(self, epid=None):
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
         reqbody = json.loads(self.request.body)
         act = reqbody["account"]
         ep = reqbody["userid"]
@@ -48,6 +53,10 @@ class changeEpHandler(tornado.web.RequestHandler):
 
     @tornado.gen.coroutine
     def get(self, epid=''):
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
         if epid != '':
             sqls = """select `account`, `ep_id`,`level_id`, `vsp_id` from `adjacency` where `ep_id`='%s'"""%epid
             res = db.execFetch(sqls)
@@ -64,6 +73,10 @@ class changeEpHandler(tornado.web.RequestHandler):
             self.write({"code": 200, "stauts": "success", "data":ep_level_list})
 
     def put(self, epid):
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
         reqbody = json.loads(self.request.body)
         #  reqbody = eval(self.request.body)
         act = reqbody["account"]
@@ -77,6 +90,10 @@ class changeEpHandler(tornado.web.RequestHandler):
         else: self.write({"code": 400, "status": "error"})
 
     def delete(self, epid):
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
         sqld = """delete from `adjacency` where `ep_id`='%s'"""%epid
         rows = db.execOnly(sqld)
         if rows == 0: self.write({"code": 400, "status":"error", "msg":"User not found."})
@@ -88,8 +105,12 @@ class changeEpHandler(tornado.web.RequestHandler):
 class changeLrHandler(tornado.web.RequestHandler):
     """ LR-NODE 表API接口 """
     def post(self, lrid=None):
-        #  reqbody = json.loads(self.request.body)
-        reqbody = eval(self.request.body)
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
+        reqbody = json.loads(self.request.body)
+        #  reqbody = eval(self.request.body)
         lr_id = reqbody.get("id")
         lr_name = reqbody.get("name")
         plevel_id = reqbody.get("p_node_level", '0')
@@ -111,6 +132,10 @@ class changeLrHandler(tornado.web.RequestHandler):
 
     @tornado.gen.coroutine
     def get(self, lrid=''):
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
         lr_node = lrNode(lrid)
         if lrid != '': 
             ret = lr_node.getLrnode()
@@ -120,8 +145,12 @@ class changeLrHandler(tornado.web.RequestHandler):
         self.write({"data":ret})
 
     def put(self, lrid):
-        #  reqbody = json.loads(self.request.body)
-        reqbody = eval(self.request.body)
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
+        reqbody = json.loads(self.request.body)
+        #  reqbody = eval(self.request.body)
         lr_name = reqbody.get("name")
         plevel_id = str(reqbody.get("p_node_level"))
         ip = reqbody.get("ip")
@@ -147,6 +176,10 @@ class changeLrHandler(tornado.web.RequestHandler):
         self.write(res)
 
     def delete(self, lrid):
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
         lr_node = lrNode(lrid)
         res = lr_node.delLrnode()
         lr = redis_client.keys("lr:*:%s"%lrid)
@@ -156,6 +189,10 @@ class changeLrHandler(tornado.web.RequestHandler):
 
 class upSysload(tornado.web.RequestHandler):
     def post(self):
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
         reqbody = json.loads(self.request.body)
         lr_id = reqbody.get("id")
         lr_sysload = reqbody.get("sysload", 0)
@@ -186,6 +223,10 @@ class upSysload(tornado.web.RequestHandler):
 
 class getForceTable(tornado.web.RequestHandler):
     def get(self, account=''):
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
         sqls = """select `id`, `account`, `lr` from `force_route`"""
         res = db.execFetch(sqls)
         force_route_list = []
@@ -198,11 +239,19 @@ class getForceTable(tornado.web.RequestHandler):
         self.render("index.html", force_route_list=force_route_list )
 
     def delete(self, account=''):
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
         sqld = """truncate table `force_route`"""
         db.execOnly(sqld)
         self.write("ok")
 
     def post(self, account):
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
         reqbody = json.loads(self.request.body)
         account = reqbody["account"]
         sqld = """delete from `force_route` where `account`='%s'"""%account
@@ -212,9 +261,17 @@ class getForceTable(tornado.web.RequestHandler):
 
 class addForce(tornado.web.RequestHandler):
     def get(self):
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
         self.render("add.html")
 
     def post(self):
+        logger = logging.getLogger("nc")
+        req = self.request
+        reqbody = self.request.body
+        logger.info(' -- %s -- "%s %s %s" - "%s" -- MSM request data: %s --'%(req.remote_ip, req.method, req.version, req.uri, req.headers["User-Agent"], reqbody))
         reqbody = json.loads(self.request.body)
         account = reqbody["account"]
         lr_ip = reqbody["lr_ip"]
@@ -238,8 +295,8 @@ class addForce(tornado.web.RequestHandler):
 
 def runWeb(port=8000):
     settings = { 
-            'debug': True,
-            #  'debug': False,
+            #  'debug': True,
+            'debug': False,
             'template_path': os.path.join(os.path.dirname(__file__), 'templates'),
             'static_path': os.path.join(os.path.dirname(__file__), 'static')
             }
@@ -252,7 +309,7 @@ def runWeb(port=8000):
         (r"/api/getmtlr", getMeetinglr),
         (r"/api/addcallee", addCallee),
     ], **settings)
-    applicaton.listen(port)
+    applicaton.listen(port, address="127.0.0.1", xheaders=True)
     tornado.ioloop.IOLoop.instance().start()
 
 
@@ -273,6 +330,7 @@ def check_lr_active(interval, fail_time):
                 #  redis_client.hset(lr, "active", "0")
                 redis_client.hset(lr, "active", "1")
 
+
 if __name__ == '__main__':
     """ redis check """
     try:
@@ -280,23 +338,31 @@ if __name__ == '__main__':
     except Exception,e:
         print "Redis server connectionError: ",e
         sys.exit(-2)
-    if len(sys.argv) != 2 or ( sys.argv[1] != "init" and not sys.argv[1].isdigit() ):
-        print """
-Usage: python %s {init|80}
-    - init: Initialize the table data, exits after execbution.
-    - 80: Start the web service on port 80, run as a daemon.
-    """%sys.argv[0]
-    elif sys.argv[1] == "init":
+
+    if len(sys.argv) == 1:
+        initLog("nc")
+        p1 = multiprocessing.Process(name="redis_cron_save", target=redis_cron_save, args=(REDIS_SAVEIN_MYSQL_INTERVAL,))
+        p2 = multiprocessing.Process(name="check_lr_active", target=check_lr_active, args=(LAST_SUBTIME_INTERVAL,LAST_SUBTIME_VALID_TIME))
+        p_list = [p1,p2]
+        for port in PORT_LIST:
+            pro = multiprocessing.Process(name="runweb", target=runWeb, args=(port,)) 
+            p_list.append(pro)
+        print "runWeb on port %s"%PORT_LIST
+
+        for p in p_list:
+            p.start()
+        for p in p_list:
+            p.join()
+    elif len(sys.argv) == 2 and sys.argv[1] == "init":
         print "initialize..."
         initLog("nc")
         initDb()
         redis_init(redis_client)
     else:
-        initLog("nc")
-        #  p1 = multiprocessing.Process(name="redis_cron_save", target=redis_cron_save, args=(7200,))
-        #  p2 = multiprocessing.Process(name="check_lr_active", target=check_lr_active, args=(3600,7200))
-        p3 = multiprocessing.Process(name="runweb", target=runWeb, args=(sys.argv[1],))
-        print "runWeb on port %s"%sys.argv[1]
-        p3.start()
-        #  for p in (p1,p2,p3):
-            #  p.start()
+        print """
+Usage: python %s [init]
+    - init: Initialize the table data, exits after execbution.
+
+PS: The used port list needs to be specified in the nc_config file.
+    """%sys.argv[0]
+

@@ -75,7 +75,7 @@ def redis_init(client):
 
 def redis_save(client):
     #  logger = logging.getLogger("nc")
-    lr_sysload_list = client.keys("lrid:*")
+    lr_sysload_list = client.keys("lr:*")
     sqlu_sys = """update lr_node set `sysload` = CASE `lr_id` """
     sqlu_time = """update lr_node set `last_subtime` = CASE `lr_id` """
     sqlu_active = """update lr_node set `active` = CASE `lr_id` """

@@ -97,6 +97,7 @@ class lrNode(object):
         try:
             db.execOnly(sqlu_1)
             result = db.execOnly(sqlu)
+            write_level(old_level)
             res = write_level(level_id) 
             redis_client.hmset("level:%s"%level_id, {"plevel_id": plevel_id, "level_cluster": res[0], "level_type": res[1]})
             redis_client.delete("ancestors:%s"%level_id)
